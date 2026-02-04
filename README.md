@@ -22,8 +22,14 @@ brew install ffmpeg
 ### 1. 获取应用
 在 `dist/` 目录下找到 `video-extractor` 文件。
 
-### 2. 运行应用
-打开终端，进入应用所在目录，运行即可：
+### 2. 授权与运行
+首次使用时，需要先在终端赋予文件执行权限：
+
+```bash
+chmod +x video-extractor
+```
+
+授权后即可运行：
 
 #### 交互模式 (推荐)
 ```bash
