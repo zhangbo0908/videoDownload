@@ -3,6 +3,6 @@ venv/
 __pycache__/
 *.pyc
 build/
-dist/
+# dist/
 downloads/
 .DS_Store
