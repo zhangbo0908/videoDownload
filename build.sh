@@ -53,6 +53,32 @@ pyinstaller --onefile \
     $ICON_PARAM \
     gui_app.py
 
+# 后期处理：强制修正 Info.plist 和图标 (解决 macOS 显示 Flet 的问题)
+APP_PATH="dist/video-downloader-gui.app"
+if [ -d "$APP_PATH" ]; then
+    echo "🔨 修正应用元数据..."
+    
+    # 强制覆盖图标
+    if [ -f "assets/app.icns" ]; then
+        cp "assets/app.icns" "$APP_PATH/Contents/Resources/app.icns"
+    fi
+    
+    # 修改 Info.plist
+    PLIST="$APP_PATH/Contents/Info.plist"
+    if [ -f "$PLIST" ]; then
+        # 修改显示名称
+        plutil -replace CFBundleDisplayName -string "Video Downloader" "$PLIST"
+        plutil -replace CFBundleName -string "Video Downloader" "$PLIST"
+        # 确保使用正确的图标文件名
+        plutil -replace CFBundleIconFile -string "app.icns" "$PLIST"
+        # 修改 Bundle ID (避免冲突)
+        plutil -replace CFBundleIdentifier -string "com.zhangbo.videodownloader" "$PLIST"
+    fi
+    
+    # 尝试清除图标缓存
+    touch "$APP_PATH"
+fi
+
 echo ""
 echo "✅ 打包完成！"
 echo ""
