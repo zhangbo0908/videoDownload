@@ -111,7 +111,19 @@ pip install -r requirements.txt
 
 # 跳过转码（保留原格式）
 ./dist/video-extractor "视频链接" --no-mp4
+
+# 使用 Cookies 文件（解决需要登录的视频）
+./dist/video-extractor "视频链接" --cookies /path/to/cookies.txt
+
+# 组合参数使用
+./dist/video-extractor "视频链接" --cookies cookies.txt --res 1080 --no-mp4
 ```
+
+**如何导出 Cookies 文件:**
+1. 安装浏览器插件 [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)(Chrome/Edge)
+2. 在需要下载的网站登录账号(如 Bilibili、YouTube)
+3. 点击插件图标,选择 "Export" → 保存为 `cookies.txt`
+4. 使用 `--cookies` 参数传递该文件路径
 
 ---
 
@@ -181,12 +193,16 @@ pyinstaller --onefile --name video-downloader-gui --windowed gui_app.py
 <details>
 <summary><b>Q2: YouTube 下载失败</b></summary>
 
-**原因**：YouTube 2025 年起大幅强化反爬虫策略，且工具为了避免 macOS 频繁弹出钥匙串访问提示，**不再自动读取 Chrome Cookies**。
+**原因**:YouTube 2025 年起大幅强化反爬虫策略,且工具为了避免 macOS 频繁弹出钥匙串访问提示,**不再自动读取 Chrome Cookies**。
 
-**解决方案**：
-1. **使用 VPN**：切换到美国/欧洲 IP 通常能缓解 403 问题。
-2. **降低画质**：尝试下载 720P 或更低分辨率。
-3. **手动传递 Cookie**（仅命令行）：高级用户可通过 `--cookies` 参数传递。
+**解决方案**:
+1. **使用 VPN**:切换到美国/欧洲 IP 通常能缓解 403 问题。
+2. **降低画质**:尝试下载 720P 或更低分辨率。
+3. **手动传递 Cookies**(仅命令行):
+   ```bash
+   # 先导出浏览器 cookies(参见上方"如何导出 Cookies 文件")
+   ./dist/video-extractor "YouTube链接" --cookies cookies.txt
+   ```
 
 </details>
 

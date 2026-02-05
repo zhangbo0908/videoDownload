@@ -77,7 +77,7 @@ class VideoExtractor:
         self._log("状态: 正在转码 (FFmpeg)...")
         subprocess.run(cmd, check=True)
 
-    def extract(self, url, convert_to_mp4=True, resolution='1080'):
+    def extract(self, url, convert_to_mp4=True, resolution='1080', cookies_file=None):
         import yt_dlp
         
         self.last_error = None
@@ -123,6 +123,14 @@ class VideoExtractor:
             'no_warnings': True,
             'http_headers': headers,
         }
+        
+        # 如果提供了 cookies 文件,添加到配置中
+        if cookies_file:
+            if os.path.exists(cookies_file):
+                ydl_opts['cookiefile'] = cookies_file
+                self._log(f"状态: 使用 Cookies 文件: {os.path.basename(cookies_file)}")
+            else:
+                self._log(f"警告: Cookies 文件不存在: {cookies_file}")
         
         # YouTube 特定优化：使用浏览器 cookies 解决 403 问题
         # 注意：macOS 下读取 Chrome cookies 需要访问钥匙串，会弹出授权提示。
@@ -292,10 +300,11 @@ class VideoExtractor:
 def main():
     if len(sys.argv) > 1:
         # 命令行模式
-        # Usage: ./video-extractor URL [--no-mp4] [--res 720]
+        # Usage: ./video-extractor URL [--no-mp4] [--res 720] [--cookies cookies.txt]
         url = None
         convert_to_mp4 = True
         resolution = '1080'
+        cookies_file = None
         
         args = sys.argv[1:]
         skip_next = False
@@ -311,12 +320,17 @@ def main():
                 if i + 1 < len(args):
                     resolution = args[i+1]
                     skip_next = True
-            elif not arg.startswith("--"):
+            elif arg == "--cookies":
+                if i + 1 < len(args):
+                    cookies_file = args[i+1]
+                    skip_next = True
+            elif not arg.startswith("--") and url is None:
+                # 只在还没有 URL 时才设置,避免参数值被误认为 URL
                 url = arg
         
         if url:
             extractor = VideoExtractor()
-            extractor.extract(url, convert_to_mp4=convert_to_mp4, resolution=resolution)
+            extractor.extract(url, convert_to_mp4=convert_to_mp4, resolution=resolution, cookies_file=cookies_file)
         else:
             print("错误: 未提供视频链接")
     else:
