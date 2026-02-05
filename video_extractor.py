@@ -140,7 +140,7 @@ class VideoExtractor:
                 
                 # 检查文件是否真实存在（下载失败时可能只有路径但无文件）
                 if not downloaded_path or not os.path.exists(downloaded_path):
-                    # 尝试寻找 mp4 后缀的文件（yt-dlp 可能自动合并了）
+                    # 策略1: 尝试寻找 mp4 后缀的文件（自动修正扩展名）
                     if downloaded_path:
                         base_chk, _ = os.path.splitext(downloaded_path)
                         mp4_path = base_chk + ".mp4"
@@ -148,9 +148,29 @@ class VideoExtractor:
                             downloaded_path = mp4_path
                             # self._log(f"自适应修正路径: {os.path.basename(downloaded_path)}")
                         else:
-                            self.last_error = f"文件未找到: {os.path.basename(downloaded_path)}"
-                            self._log(f"错误: {self.last_error}")
-                            return False
+                            # 策略2: 模糊搜索 (应对 FFmpeg 未安装导致无法合并，文件名带有格式后缀的情况)
+                            # 例如: "Title.f10086.mp4" 而不是 "Title.mp4"
+                            dir_path = os.path.dirname(downloaded_path)
+                            base_name = os.path.basename(base_chk) # 去除后缀的文件名部分
+                            
+                            found_candidate = None
+                            if os.path.exists(dir_path):
+                                for f in os.listdir(dir_path):
+                                    # 检查文件名是否包含预期的标题，且是视频/音频格式
+                                    if base_name in f and f.lower().endswith(('.mp4', '.m4a', '.webm', '.mkv')):
+                                        found_candidate = os.path.join(dir_path, f)
+                                        # 如果找到视频文件，优先使用；如果是音频，继续找看看有没有视频
+                                        if f.lower().endswith('.mp4'):
+                                            break
+                            
+                            if found_candidate:
+                                downloaded_path = found_candidate
+                                self.last_error = "下载成功但未合并 (可能由于缺少 FFmpeg)"
+                                self._log(f"警告: 检测到分轨文件，合并可能失败。{os.path.basename(downloaded_path)}")
+                            else:
+                                self.last_error = f"文件未找到: {os.path.basename(downloaded_path)}"
+                                self._log(f"错误: {self.last_error}")
+                                return False
                     else:
                         self.last_error = "无法确定文件下载路径"
                         self._log(f"错误: {self.last_error}")
