@@ -77,17 +77,28 @@ if [ -d "$APP_PATH" ]; then
     
     # 尝试清除图标缓存
     touch "$APP_PATH"
+
+    # 4. 重命名应用包 (Finder 显示的文件名)
+    NEW_APP_PATH="dist/Video Downloader.app"
+    echo "📦 重命名为 Video Downloader.app..."
+    mv "$APP_PATH" "$NEW_APP_PATH"
+    APP_PATH="$NEW_APP_PATH"
+
+    # 5. 移除安全隔离属性 (防止"文件已损坏"提示)
+    echo "🛡️  移除隔离属性 (Quarantine)..."
+    xattr -cr "$APP_PATH" || true
+
+    # 6. 重新签名 (关键：修改 Info.plist 后必须重签)
+    echo "✍️  重新进行 Ad-hoc 签名..."
+    codesign --force --deep --sign - "$APP_PATH"
 fi
 
 echo ""
 echo "✅ 打包完成！"
 echo ""
 echo "📂 输出目录: dist/"
-echo "   - video-extractor          (命令行版本)"
-echo "   - video-downloader-gui     (GUI 版本)"
+echo "   - Video Downloader.app     (Mac 应用)"
+echo "   - video-extractor          (命令行工具)"
 echo ""
-echo "💡 使用提示:"
-echo "   chmod +x dist/video-extractor"
-echo "   chmod +x dist/video-downloader-gui"
-echo ""
+echo "💡 提示：如果图标仍未刷新，请将应用移动到'应用程序'目录或重启电脑。"
 echo "🎉 大功告成！"
