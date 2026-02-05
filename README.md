@@ -27,6 +27,10 @@
 
 ```bash
 brew install ffmpeg
+
+> **⚠️ 重要提示**：强烈建议安装 FFmpeg！
+> Bilibili 和 YouTube 的 1080P+ 高画质视频通常将画面（Video）和声音（Audio）分开传输。
+> 如果没有 FFmpeg，工具将无法合并它们，你可能会得到两个分离的文件（如 `Title.fxxx.mp4` 和 `Title.fxxx.m4a`）。
 ```
 
 #### 2. Python 依赖（仅开发/源码运行）
@@ -177,13 +181,12 @@ pyinstaller --onefile --name video-downloader-gui --windowed gui_app.py
 <details>
 <summary><b>Q2: YouTube 下载失败</b></summary>
 
-**原因**：YouTube 2025 年起大幅强化反爬虫策略。
+**原因**：YouTube 2025 年起大幅强化反爬虫策略，且工具为了避免 macOS 频繁弹出钥匙串访问提示，**不再自动读取 Chrome Cookies**。
 
 **解决方案**：
-1. **必须**在 Chrome 中登录 YouTube 账号
-2. 使用 VPN 切换到美国/欧洲 IP
-3. 降低分辨率至 480P 或 360P
-4. 如仍失败，这是 YouTube 平台限制，无法通过代码解决
+1. **使用 VPN**：切换到美国/欧洲 IP 通常能缓解 403 问题。
+2. **降低画质**：尝试下载 720P 或更低分辨率。
+3. **手动传递 Cookie**（仅命令行）：高级用户可通过 `--cookies` 参数传递。
 
 </details>
 
@@ -199,6 +202,29 @@ xattr -d com.apple.quarantine dist/video-downloader-gui
 # 方法 2：手动授权
 # 右键点击应用 → 打开 → 确认打开
 ```
+
+</details>
+
+<details>
+<summary><b>Q4: 下载成功但文件是分离的（有画面没声音/有声音没画面）</b></summary>
+
+**原因**：系统中未安装或未配置 **FFmpeg**。
+- 工具已成功下载了视频流和音频流，但在最后一步合并时失败。
+- GUI 会提示 "下载成功但未合并"。
+
+**解决方案**：
+请参考 [安装依赖](#-安装依赖) 章节安装 FFmpeg。安装后重启应用即可。
+
+</details>
+
+<details>
+<summary><b>Q5: 视频下载到哪里了？</b></summary>
+
+**默认路径**：
+- **macOS / Linux**: `~/Downloads/VideoDownloads/` (用户下载目录下的 VideoDownloads 文件夹)
+- **Windows**: `C:\Users\用户名\Downloads\VideoDownloads\`
+
+为了解决 macOS 打包应用的权限问题，我们已将默认路径固定为用户下载目录。
 
 </details>
 
