@@ -16,10 +16,30 @@ class VideoExtractor:
         if not os.path.exists(self.download_dir):
             os.makedirs(self.download_dir)
         
-        # 检查 FFmpeg 是否可用
+        # 检查 FFmpeg 是否可用 (增强路径检测)
         import shutil
+        
+        # 常见路径列表 (macOS/Linux)
+        possible_paths = [
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "/opt/local/bin",
+            "/usr/bin",
+            "/bin",
+            os.path.join(os.path.expanduser("~"), "bin")
+        ]
+        
+        # 尝试将这些路径添加到 PATH
+        current_path = os.environ.get("PATH", "")
+        for p in possible_paths:
+            if os.path.exists(p) and p not in current_path:
+                os.environ["PATH"] += os.pathsep + p
+                
         if not shutil.which("ffmpeg"):
             self._log("警告: 系统中未检测到 FFmpeg，部分平台(如B站)可能无法下载高清或视频合并。")
+        else:
+            # self._log(f"FFmpeg 已就绪: {shutil.which('ffmpeg')}")
+            pass
 
     def _log(self, message):
         if self.status_callback:
@@ -165,8 +185,62 @@ class VideoExtractor:
                             
                             if found_candidate:
                                 downloaded_path = found_candidate
-                                self.last_error = "下载成功但未合并 (可能由于缺少 FFmpeg)"
-                                self._log(f"警告: 检测到分轨文件，合并可能失败。{os.path.basename(downloaded_path)}")
+                                # 尝试手动合并分轨文件
+                                try:
+                                    video_part = None
+                                    audio_part = None
+                                    # 简单判断：found_candidate 是视频，那还得找音频
+                                    # 假设命名规则: Title.fxxx.mp4 (video) 和 Title.fxxx.m4a (audio)
+                                    # 或者 yt-dlp 风格: Title.mp4, Title.m4a
+                                    
+                                    # 扫描目录下所有同名不同后缀文件
+                                    candidates = []
+                                    for f in os.listdir(dir_path):
+                                        if base_name in f:
+                                            candidates.append(os.path.join(dir_path, f))
+                                    
+                                    for c in candidates:
+                                        if c.lower().endswith(('.mp4', '.webm', '.mkv')) and not c.lower().endswith('.temp.mp4'): # 排除正在生成的temp
+                                            video_part = c
+                                        elif c.lower().endswith(('.m4a', '.mp3', '.aac')):
+                                            audio_part = c
+                                    
+                                    if video_part and audio_part and shutil.which("ffmpeg"):
+                                        merged_output = os.path.join(dir_path, base_name + ".mp4")
+                                        self._log(f"状态: 检测到分轨资源，尝试手动合并...")
+                                        self._log(f"视频: {os.path.basename(video_part)}")
+                                        self._log(f"音频: {os.path.basename(audio_part)}")
+                                        
+                                        cmd = [
+                                            'ffmpeg', '-y',
+                                            '-i', video_part,
+                                            '-i', audio_part,
+                                            '-c:v', 'copy',
+                                            '-c:a', 'aac', # 音频转码 AAC 以保证兼容性
+                                            '-strict', 'experimental',
+                                            '-loglevel', 'error',
+                                            merged_output
+                                        ]
+                                        import subprocess
+                                        subprocess.run(cmd, check=True)
+                                        
+                                        self._log("状态: 手动合并成功")
+                                        downloaded_path = merged_output
+                                        output_path = merged_output
+                                        
+                                        # 清理分轨文件
+                                        try:
+                                            os.remove(video_part)
+                                            os.remove(audio_part)
+                                        except:
+                                            pass
+                                    else:
+                                        self.last_error = "下载成功但未合并 (缺少 FFmpeg 或 音频轨)"
+                                        self._log(f"警告: {self.last_error}")
+                                except Exception as e:
+                                    self._log(f"手动合并失败: {e}")
+                                    self.last_error = "下载成功但未合并"
+
                             else:
                                 self.last_error = f"文件未找到: {os.path.basename(downloaded_path)}"
                                 self._log(f"错误: {self.last_error}")
