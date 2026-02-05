@@ -56,7 +56,7 @@ pip install -r requirements.txt
 # 使用虚拟环境运行（开发模式）
 .venv/bin/python gui_app.py
 
-# 或使用打包后的应用（待打包）
+# 或使用打包后的应用
 ./dist/video-downloader-gui
 ```
 
