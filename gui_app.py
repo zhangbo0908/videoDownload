@@ -1,6 +1,10 @@
 import flet as ft
 import os
 import threading
+import warnings
+# 忽略 Flet 的 DeprecationWarning (如 app() -> run())
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 from video_extractor import VideoExtractor
 
 class DownloadTask(ft.Container):
