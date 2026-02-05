@@ -40,10 +40,10 @@ class DownloadTask(ft.Container):
         self.status_text.value = message
         self.update()
 
-    def run_download(self, convert_to_mp4=True, resolution='1080'):
+    def run_download(self, convert_to_mp4=True, resolution='1080', cookies_file=None):
         self.extractor.progress_callback = self.update_progress
         self.extractor.status_callback = self.update_status
-        success = self.extractor.extract(self.url, convert_to_mp4=convert_to_mp4, resolution=resolution)
+        success = self.extractor.extract(self.url, convert_to_mp4=convert_to_mp4, resolution=resolution, cookies_file=cookies_file)
         if success:
             self.status_text.value = "任务已完成"
             self.status_text.color = ft.Colors.GREEN_400
@@ -112,9 +112,23 @@ def main(page: ft.Page):
         task_list.controls.insert(0, task_ui)
         page.update()
         
+        
         def thread_wrapper():
             try:
-                task_ui.run_download(convert_to_mp4=config["convert"], resolution=config["resolution"])
+                # 自动检测 cookies.txt (在当前目录或 dist 目录下)
+                cookies_path = "cookies.txt"
+                if not os.path.exists(cookies_path):
+                     # 尝试在打包后的应用资源目录查找 (可选)
+                     cookies_path = None
+                
+                if cookies_path:
+                    task_ui.status_text.value = "准备中... (已加载 cookies.txt)"
+                    
+                task_ui.run_download(
+                    convert_to_mp4=config["convert"], 
+                    resolution=config["resolution"],
+                    cookies_file=cookies_path
+                )
             except Exception as ex:
                 task_ui.status_text.value = f"错误: {str(ex)}"
                 task_ui.status_text.color = ft.Colors.RED_400
