@@ -1,8 +1,8 @@
+.venv/
 venv/
 __pycache__/
 *.pyc
 build/
-# dist/
+dist/
 downloads/
-*.spec
 .DS_Store
