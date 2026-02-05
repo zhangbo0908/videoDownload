@@ -1,5 +1,8 @@
 import sys
 import os
+import re
+import json
+from curl_cffi import requests as cffi_requests # 使用 curl_cffi 绕过 TLS 指纹
 # import yt_dlp # 移除顶层导入，优化启动速度
 
 class VideoExtractor:
@@ -40,6 +43,97 @@ class VideoExtractor:
         else:
             # self._log(f"FFmpeg 已就绪: {shutil.which('ffmpeg')}")
             pass
+
+    def _extract_douyin_video_url(self, original_url):
+        """
+        使用 curl_cffi 模拟移动端请求，解析 Douyin 真实播放地址
+        绕过 yt-dlp 无法处理的 WAF/Signature
+        """
+        try:
+            # 1. 提取 Video ID
+            video_id = ""
+            # 匹配 /video/73... based pattern
+            match = re.search(r'/video/(\d+)', original_url)
+            if match:
+                video_id = match.group(1)
+            else:
+                match = re.search(r'modal_id=(\d+)', original_url)
+                if match: video_id = match.group(1)
+            
+            if not video_id:
+                return None
+
+            self._log(f"状态: 尝试 Douyin 专用解析 (ID={video_id})")
+            
+            # 2. 构造移动端分享链接
+            mobile_url = f"https://www.iesdouyin.com/share/video/{video_id}/"
+            
+            # 3. 使用 curl_cffi 请求
+            try:
+                response = cffi_requests.get(
+                    mobile_url,
+                    impersonate="chrome120",
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                    },
+                    allow_redirects=True,
+                    timeout=15
+                )
+            except Exception as net_err:
+                self._log(f"Douyin 解析连接失败: {net_err}")
+                return None
+
+            if response.status_code != 200:
+                self._log(f"Douyin 解析请求返回: {response.status_code}")
+                return None
+            
+            html = response.text
+            
+            # 4. 解析 _ROUTER_DATA
+            # 尝试更宽松的正则匹配 (移动端页面结构多变)
+            match_data = re.search(r'window\._ROUTER_DATA\s*=\s*(\{.*?\})(?:\s*;)?\s*</script>', html, re.DOTALL)
+            if not match_data:
+                 match_data = re.search(r'window\._ROUTER_DATA\s*=\s*(\{.*\})', html)
+            
+            if match_data:
+                json_str = match_data.group(1)
+                try:
+                    data = json.loads(json_str)
+                    loader_data = data.get("loaderData", {})
+                    
+                    video_info = None
+                    for key, val in loader_data.items():
+                        if isinstance(val, dict) and "videoInfoRes" in val:
+                            video_info = val["videoInfoRes"]
+                            break
+                    
+                    if video_info:
+                        if "item_list" in video_info and video_info["item_list"]:
+                            item = video_info["item_list"][0]
+                            play_addr = item.get("video", {}).get("play_addr", {})
+                            url_list = play_addr.get("url_list", [])
+                            
+                            if url_list:
+                                final_url = url_list[0]
+                                no_wm_url = final_url.replace("/playwm/", "/play/")
+                                self._log(f"状态: Douyin 直链解析成功")
+                                return no_wm_url
+                except Exception as parse_err:
+                    self._log(f"Douyin 数据解析警告: {parse_err}")
+            
+            # 5. 备用正则
+            raw_match = re.search(r'https://[^"]+/playwm/[^"]+', html)
+            if raw_match:
+                 self._log(f"状态: Douyin 直链匹配成功 (Regex)")
+                 return raw_match.group(0).replace("/playwm/", "/play/")
+                 
+            self._log("Douyin 解析失败: 未找到视频链接")
+            return None
+            
+        except Exception as e:
+            self._log(f"Douyin 解析异常: {e}")
+            return None
 
     def _log(self, message):
         if self.status_callback:
@@ -192,6 +286,13 @@ class VideoExtractor:
         # YouTube 特殊处理: 使用命令行调用
         if 'youtube.com' in url or 'youtu.be' in url:
             return self._extract_youtube_cli(url, convert_to_mp4, resolution, cookies_file)
+            
+        # Douyin 特殊处理: 使用 curl_cffi 绕过 WAF
+        if 'douyin.com' in url:
+            cffi_url = self._extract_douyin_video_url(url)
+            if cffi_url:
+                # 成功获取真实地址，替换 URL 并添加 Headers 提示
+                url = cffi_url
         
         # 其他平台: 使用 Python API (原有逻辑)
         
@@ -212,6 +313,10 @@ class VideoExtractor:
 
         # 动态构建 Headers
         headers = {}
+        
+        # 针对 Douyin 直链 (snssdk) 或 Bilibili
+        if 'snssdk.com' in url: # CFFI 提取后的直链
+             headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36'
         
         # 仅针对 Bilibili 添加 Referer（保持最简配置）
         if 'bilibili.com' in url or 'b23.tv' in url:
