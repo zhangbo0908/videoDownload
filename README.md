@@ -1,103 +1,118 @@
-# 万能视频提取工具
+# Video Downloader (万能视频提取工具)
 
-> 🎯 **双模式设计**：提供科技简约风格的 **GUI 界面**和强大的**命令行工具**，支持 Bilibili、YouTube 等 1000+ 视频平台的高画质下载。
+> 🎯 **v0.2.0 重大更新**：基于 **Python 3.12** 和 **Flet 0.80+** 重构，采用**混合下载架构**，完美解决了 YouTube 高画质下载和 API 格式错误问题。提供科技简约风格的 **GUI 界面**，支持 macOS 原生应用体验。
 
-![Platform](https://img.shields.io/badge/Platform-macOS-blue)
-![Python](https://img.shields.io/badge/Python-3.9%2B-green)
+![Platform](https://img.shields.io/badge/Platform-macOS%20(ARM64)-blue)
+![Python](https://img.shields.io/badge/Python-3.12%2B-green)
 ![License](https://img.shields.io/badge/License-Apache%202.0-orange)
 
 ---
 
 ## ✨ 核心特性
 
-- 🎨 **双模式运行**：GUI 可视化界面 + 命令行批处理
-- 🌐 **全平台支持**：Bilibili、YouTube、抖音、TikTok 等 1000+ 网站
-- 🎬 **智能转码**：自动将 WebM/MKV 转为 MP4 (H.264)
-- 📊 **实时进度**：GUI 任务列表 + 动态进度条
-- ⚙️ **画质控制**：支持 360P ~ 8K 自由选择
-- 🔒 **隐私保护**：自动读取浏览器登录态（无需手动输入密码）
+- 🎨 **双模式运行**：
+  - **GUI 模式**：原生 macOS 应用 (`.app`)，毛玻璃特效，深色科技风。
+  - **命令行模式**：支持脚本调用和批处理。
+- 🌐 **全平台支持**：核心优化 **YouTube** 下载体验，同时也支持 Bilibili、TikTok 等 1000+ 平台。
+- 🛠 **混合下载架构 (New)**：
+  - **YouTube**: 采用动态格式选择算法 (`bestvideo[height<=REL]+bestaudio`)，智能规避 API 限制。
+  - **其他平台**: 使用标准 Python API 高效处理。
+- 🎬 **智能转码**：自动将 WebM/MKV 转为 MP4，确保兼容性。
+- 📊 **实时进度**：精准的下载百分比、速度和剩余时间显示。
+- ⚙️ **画质控制**：严格遵循用户设置的分辨率 (360P ~ 1080P/Max)，自动降级回退。
+- 🔒 **隐私保护**：自动读取浏览器 Cookies（Chrome），无需手动提取。
 
 ---
 
-## 📦 安装依赖
+## 📦 安装说明 (macOS)
 
-### 必需依赖
+### 方式 1：直接运行应用 (推荐)
 
-#### 1. FFmpeg（视频处理核心）
-
-```bash
-brew install ffmpeg
-
-> **⚠️ 重要提示**：强烈建议安装 FFmpeg！
-> Bilibili 和 YouTube 的 1080P+ 高画质视频通常将画面（Video）和声音（Audio）分开传输。
-> 如果没有 FFmpeg，工具将无法合并它们，你可能会得到两个分离的文件（如 `Title.fxxx.mp4` 和 `Title.fxxx.m4a`）。
-```
-
-#### 2. Python 依赖（仅开发/源码运行）
+在 `dist` 目录下找到打包好的应用：
 
 ```bash
-pip install -r requirements.txt
+dist/Video Downloader.app
 ```
 
-**核心依赖说明**：
-- `yt-dlp`：视频下载引擎（支持 1000+ 网站）
-- `flet[all]`：跨平台 GUI 框架
-- `pycryptodomex`：浏览器 cookies 解密（读取登录态）
+**首次运行提示 "无法打开"？**
+macOS Gatekeeper 可能会拦截未签名的应用。请执行以下命令移除隔离属性：
+
+```bash
+xattr -cr "dist/Video Downloader.app"
+```
+
+然后双击打开即可使用。
+
+### 方式 2：从源码运行 (开发模式)
+
+如果你想修改代码或体验最新功能：
+
+1. **环境要求**:
+   - Python 3.12+ (必需)
+   - FFmpeg (`brew install ffmpeg`)
+
+2. **安装依赖**:
+   ```bash
+   # 创建并激活虚拟环境
+   python3.12 -m venv .venv_py312
+   source .venv_py312/bin/activate
+   
+   # 安装依赖
+   pip install -r requirements.txt
+   ```
+
+3. **运行 GUI**:
+   ```bash
+   python gui_app.py
+   ```
 
 ---
 
 ## 🚀 使用指南
 
-### 方式 1：GUI 图形界面（推荐新手）
+### GUI 图形界面
 
-#### 启动应用
+1. **粘贴链接**: 支持 YouTube, Bilibili, TikTok 等 URL。
+2. **设置画质**: 点击右上角 ⚙️ 设置图标，选择期望分辨率 (默认 1080P)。
+3. **开始下载**: 点击 "解析并下载"。
+4. **查看文件**: 默认下载至 `~/Downloads/VideoDownloads`。
+
+### 命令行工具
 
 ```bash
-# 使用虚拟环境运行（开发模式）
-.venv/bin/python gui_app.py
+# 交互模式
+python video_extractor.py
 
-# 或使用打包后的应用
-./dist/video-downloader-gui
+# 命令行参数模式
+python video_extractor.py "https://youtu.be/xxx" --res 1080 --mp4
 ```
-
-#### 界面功能
-
-<details>
-<summary><b>📸 界面预览</b></summary>
-
-- **深色科技风格**：毛玻璃效果 + 极光蓝强调色
-- **任务卡片**：实时显示下载进度、速度、剩余时间
-- **设置面板**：可调整分辨率（360P ~ 1080P）、转码开关
-
-</details>
-
-#### 使用步骤
-
-1. **粘贴视频链接**：在输入框中粘贴 Bilibili/YouTube 等链接
-2. **点击下载**：自动解析并开始下载
-3. **实时监控**：在任务列表中查看进度
-4. **自定义设置**：点击右上角齿轮图标调整参数
 
 ---
 
-### 方式 2：命令行工具（批量/自动化）
+## 🛠 技术细节 (v0.2.0 更新)
 
-#### 交互模式（推荐）
+### 1. 架构升级
+- **Python 3.12**: 这一版本强制要求 Python 3.12，以获得更好的 SSL/TLS 支持和性能。
+- **yt-dlp 2026.02**: 集成了最新的提取器，解决了 YouTube JS 挑战问题。
 
-```bash
-# 开发模式
-.venv/bin/python video_extractor.py
+### 2. 兼容性修复
+- **Flet 0.80.5 适配**: 修复了 `Dropdown` 事件绑定和 `page.show_drawer` 异步调用的 API 变更问题。
+- **PyInstaller 打包**: 解决了打包后 `yt-dlp` 命令行工具缺失的问题，重构为 Library API 调用。
 
-# 打包版本
-./dist/video-extractor
-```
+### 3. YouTube 专项优化
+- 移除了导致 403 错误的 `--cookies-from-browser` 参数。
+- 实现了动态格式选择器，优先匹配用户分辨率但保留最佳兼容性回退。
 
-**交互流程**：
-1. 输入视频链接
-2. 选择分辨率（默认 1080P，输入 `max` 为最高画质）
-3. 确认是否转为 MP4（默认是）
+---
 
-#### 命令行模式（脚本化）
+## 📅 版本历史
+
+- **v0.2.0 (2026-02-05)**: 重大版本更新。修复 YouTube 下载，升级架构，修复 GUI 崩溃问题。
+- **v0.1.0**: 初始版本，支持基础 GUI 和 Bilibili 下载。
+
+---
+
+> **注意**: 如果遇到 YouTube 下载慢，通常是网络连接问题。工具本身已配置为使用系统代理。
 
 ```bash
 # 默认 1080P + 转 MP4

@@ -119,9 +119,33 @@ def main(page: ft.Page):
         threading.Thread(target=thread_wrapper, daemon=True).start()
 
     # 设置面板
-    def toggle_settings(e):
-        page.drawer.open = not page.drawer.open
-        page.update()
+    async def toggle_settings(e):
+        # Flet 0.80.5+ fix: show_drawer is a coroutine
+        await page.show_drawer()
+
+    # --- 偏好设置组件 (提前定义以绑定事件) ---
+    
+    # 1. 分辨率选择
+    resolution_dd = ft.Dropdown(
+        value="1080",
+        options=[
+            ft.dropdown.Option("max", "最高画质"),
+            ft.dropdown.Option("1080", "1080P"),
+            ft.dropdown.Option("720", "720P"),
+            ft.dropdown.Option("480", "480P"),
+        ],
+    )
+    # 绑定事件 (Flet 0.80.5+ 必须在实例化后绑定)
+    resolution_dd.on_change = lambda e: config.update({"resolution": resolution_dd.value})
+
+    # 2. MP4 转换开关
+    mp4_switch = ft.Switch(
+        label="下载后自动转为 MP4",
+        value=True,
+        active_color="#00D2FF",
+    )
+    # 绑定事件
+    mp4_switch.on_change = lambda e: config.update({"convert": mp4_switch.value})
 
     page.drawer = ft.NavigationDrawer(
         bgcolor="#1A1A1A",
@@ -132,24 +156,10 @@ def main(page: ft.Page):
             ft.Container(
                 content=ft.Column([
                     ft.Text("下载分辨率", size=14),
-                    ft.Dropdown(
-                        value="1080",
-                        options=[
-                            ft.dropdown.Option("max", "最高画质"),
-                            ft.dropdown.Option("1080", "1080P"),
-                            ft.dropdown.Option("720", "720P"),
-                            ft.dropdown.Option("480", "480P"),
-                        ],
-                        on_change=lambda e: config.update({"resolution": e.data})
-                    ),
+                    resolution_dd,
                     ft.Divider(height=10, color="transparent"),
                     ft.Text("格式转换", size=14),
-                    ft.Switch(
-                        label="下载后自动转为 MP4",
-                        value=True,
-                        active_color="#00D2FF",
-                        on_change=lambda e: config.update({"convert": e.control.value})
-                    ),
+                    mp4_switch,
                 ], spacing=10),
                 padding=20
             )
@@ -203,4 +213,4 @@ def main(page: ft.Page):
     )
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.app(main)
