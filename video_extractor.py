@@ -3,7 +3,11 @@ import os
 # import yt_dlp # 移除顶层导入，优化启动速度
 
 class VideoExtractor:
-    def __init__(self, download_dir="downloads", progress_callback=None, status_callback=None):
+    def __init__(self, download_dir=None, progress_callback=None, status_callback=None):
+        if download_dir is None:
+            # 默认为用户下载目录下的 VideoDownloads 文件夹
+            download_dir = os.path.join(os.path.expanduser("~"), "Downloads", "VideoDownloads")
+            
         self.download_dir = download_dir
         self.progress_callback = progress_callback # 用于同步进度的回调 (percent, speed, eta)
         self.status_callback = status_callback     # 用于同步状态文字的回调
@@ -128,8 +132,19 @@ class VideoExtractor:
                 
                 # 检查文件是否真实存在（下载失败时可能只有路径但无文件）
                 if not downloaded_path or not os.path.exists(downloaded_path):
-                    self._log("下载失败: 文件未成功保存")
-                    return False
+                    # 尝试寻找 mp4 后缀的文件（yt-dlp 可能自动合并了）
+                    if downloaded_path:
+                        base_chk, _ = os.path.splitext(downloaded_path)
+                        mp4_path = base_chk + ".mp4"
+                        if os.path.exists(mp4_path):
+                            downloaded_path = mp4_path
+                            self._log(f"自适应修正文件路径: {os.path.basename(downloaded_path)}")
+                        else:
+                            self._log(f"下载失败: 文件未找到 {downloaded_path}")
+                            return False
+                    else:
+                        self._log("下载失败: 无法确定文件路径")
+                        return False
                 
                 if convert_to_mp4 and downloaded_path and os.path.exists(downloaded_path):
                     base, ext = os.path.splitext(downloaded_path)
