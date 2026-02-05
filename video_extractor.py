@@ -11,6 +11,8 @@ class VideoExtractor:
         self.download_dir = download_dir
         self.progress_callback = progress_callback # 用于同步进度的回调 (percent, speed, eta)
         self.status_callback = status_callback     # 用于同步状态文字的回调
+        self.last_error = None # 记录最后一次错误信息
+        
         if not os.path.exists(self.download_dir):
             os.makedirs(self.download_dir)
         
@@ -41,7 +43,7 @@ class VideoExtractor:
                 print(f"\r正在下载: {p_str}% | 速度: {s_str} | 剩余时间: {e_str}", end='')
         elif d['status'] == 'finished':
             if self.progress_callback:
-                self.progress_callback(1.0, "完成", "0s")
+                self.progress_callback(1.0, "下载完成，准备处理...", "0s")
 
     def convert_to_mp4_ffmpeg(self, input_path, output_path):
         import subprocess
@@ -52,31 +54,33 @@ class VideoExtractor:
             '-loglevel', 'error', '-stats',
             output_path
         ]
-        self._log("启动 FFmpeg 转码引擎...")
+        self._log("状态: 正在转码 (FFmpeg)...")
         subprocess.run(cmd, check=True)
 
     def extract(self, url, convert_to_mp4=True, resolution='1080'):
         import yt_dlp
         
+        self.last_error = None
+        
         # 自动补全协议头
         if not url.startswith(("http://", "https://")):
             url = "https://" + url
         
-        self._log(f"正在解析链接: {url}")
+        self._log(f"状态: 正在解析链接...")
         
         if resolution.lower() == 'max':
             format_str = 'bestvideo+bestaudio/best'
-            self._log("选择画质: 最高可用画质")
+            # self._log("选择画质: 最高可用画质")
         else:
             try:
                 res_val = int(resolution.replace('p', '').replace('P', ''))
                 # YouTube 特定优化：排除 HLS 协议，优先使用 progressive mp4
                 if 'youtube.com' in url or 'youtu.be' in url:
                     format_str = f'best[height<={res_val}][ext=mp4][protocol!=m3u8]/bestvideo[height<={res_val}][protocol!=m3u8]+bestaudio[protocol!=m3u8]/best[height<={res_val}]'
-                    self._log(f"选择画质: 不超过 {res_val}P (排除 HLS 流)")
+                    # self._log(f"选择画质: 不超过 {res_val}P (排除 HLS 流)")
                 else:
                     format_str = f'bestvideo[height<={res_val}]+bestaudio/best[height<={res_val}]'
-                    self._log(f"选择画质: 不超过 {res_val}P")
+                    # self._log(f"选择画质: 不超过 {res_val}P")
             except ValueError:
                 format_str = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]'
                 self._log("分辨率参数错误，使用默认 1080P")
@@ -110,16 +114,20 @@ class VideoExtractor:
         #         pass
         
         try:
+            downloaded_path = None
+            output_path = None # 最终文件路径
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                self._log("状态: 开始提取下载...")
                 info = ydl.extract_info(url, download=True)
                 if not info:
-                    self._log("提取失败: 无法获取视频信息")
+                    self.last_error = "无法获取视频信息"
+                    self._log(f"错误: {self.last_error}")
                     return False
                 
                 title = info.get('title', 'Unknown')
-                self._log(f"下载完成: {title}")
+                # self._log(f"下载已完成: {title}")
                 
-                downloaded_path = None
                 # 修复：下载失败时 requested_downloads 可能为空或不包含 filepath
                 if 'requested_downloads' in info and info['requested_downloads']:
                     try:
@@ -138,34 +146,53 @@ class VideoExtractor:
                         mp4_path = base_chk + ".mp4"
                         if os.path.exists(mp4_path):
                             downloaded_path = mp4_path
-                            self._log(f"自适应修正文件路径: {os.path.basename(downloaded_path)}")
+                            # self._log(f"自适应修正路径: {os.path.basename(downloaded_path)}")
                         else:
-                            self._log(f"下载失败: 文件未找到 {downloaded_path}")
+                            self.last_error = f"文件未找到: {os.path.basename(downloaded_path)}"
+                            self._log(f"错误: {self.last_error}")
                             return False
                     else:
-                        self._log("下载失败: 无法确定文件路径")
+                        self.last_error = "无法确定文件下载路径"
+                        self._log(f"错误: {self.last_error}")
                         return False
                 
+                # 默认最终路径就是下载路径
+                output_path = downloaded_path
+
                 if convert_to_mp4 and downloaded_path and os.path.exists(downloaded_path):
                     base, ext = os.path.splitext(downloaded_path)
                     if ext.lower() == '.mp4':
-                        self._log("目标文件已是 MP4 格式，无需转换。")
+                        self._log("状态: 校验完成 (已是 MP4)")
                         return True
                         
-                    output_path = base + ".mp4"
-                    self._log(f"正在将视频转换为 MP4 格式 (H.264)...")
+                    target_mp4 = base + ".mp4"
+                    self._log(f"状态: 正在转码为 MP4...")
                     try:
-                        self.convert_to_mp4_ffmpeg(downloaded_path, output_path)
-                        self._log(f"转换成功: {os.path.basename(output_path)}")
+                        self.convert_to_mp4_ffmpeg(downloaded_path, target_mp4)
+                        self._log(f"状态: 转码成功")
+                        output_path = target_mp4 # 更新最终路径
                         os.remove(downloaded_path)
-                        self._log("已清理临时源文件。")
+                        # self._log("已清理源文件")
                     except Exception as e:
-                        self._log(f"格式转换失败: {e}")
+                        self.last_error = f"转码异常: {str(e)}"
+                        self._log(f"警告: {self.last_error}")
+                        # 转码失败不应导致任务失败，只要源文件还在
+                        output_path = downloaded_path
                 
-                return True
+                # 最终校验：只要有一个文件存在，就返回成功
+                if output_path and os.path.exists(output_path):
+                    self._log("状态: 任务全部完成")
+                    return True
+                elif downloaded_path and os.path.exists(downloaded_path):
+                    self._log("状态: 任务完成 (未转码)")
+                    return True
+                else:
+                    self.last_error = "最终文件校验失败"
+                    return False
                 
         except Exception as e:
-            self._log(f"发生错误: {str(e)}")
+            self.last_error = f"运行异常: {str(e)}"
+            self._log(f"错误: {self.last_error}")
             return False
 
 def main():

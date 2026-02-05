@@ -44,7 +44,12 @@ class DownloadTask(ft.Container):
             self.status_text.value = "任务已完成"
             self.status_text.color = ft.Colors.GREEN_400
         else:
-            self.status_text.value = "任务失败"
+            # 优先显示具体错误信息
+            error_msg = getattr(self.extractor, 'last_error', None)
+            if error_msg:
+                self.status_text.value = f"失败: {error_msg}"
+            else:
+                self.status_text.value = "任务失败"
             self.status_text.color = ft.Colors.RED_400
         self.on_task_complete()
         self.update()
@@ -60,7 +65,9 @@ def main(page: ft.Page):
 
     # 状态变量
     config = {
-        "path": os.path.join(os.getcwd(), "downloads"),
+        # 修复：macOS 打包应用中 os.getcwd() 可能为只读根目录
+        # 改为使用用户下载文件夹
+        "path": os.path.join(os.path.expanduser("~"), "Downloads", "VideoDownloads"),
         "resolution": "1080",
         "convert": True
     }
