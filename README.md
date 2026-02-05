@@ -36,13 +36,25 @@ dist/Video Downloader.app
 ```
 
 **首次运行提示 "无法打开"？**
-macOS Gatekeeper 可能会拦截未签名的应用。请执行以下命令移除隔离属性：
+macOS Gatekeeper 可能会拦截未签名的应用（显示“无法验证开发者”或“由于来自不可信开发者而无法打开”）。你需要手动移除文件的“隔离属性”：
 
-```bash
-xattr -cr "dist/Video Downloader.app"
-```
+1. **指令含义**：
+   - `xattr`: 扩展属性工具。
+   - `-c`: 清除属性。
+   - `-r`: 递归处理整个应用包。
+   结合起来就是移除苹果添加的安全标记，让系统允许其运行。
 
-然后双击打开即可使用。
+2. **操作示例**：
+   - **如果应用在 `dist` 目录**：
+     ```bash
+     xattr -cr "dist/Video Downloader.app"
+     ```
+   - **如果已经拖入“应用程序” (Applications) 文件夹**：
+     ```bash
+     xattr -cr /Applications/"Video Downloader.app"
+     ```
+
+处理完成后，直接双击打开即可正常使用。
 
 ### 方式 2：从源码运行 (开发模式)
 

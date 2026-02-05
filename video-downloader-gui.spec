@@ -10,7 +10,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['tkinter', 'tcl', 'idlelib', 'unittest', 'pydoc', 'email', 'html', 'http', 'sqlite3', 'dist'], # 排除 dist 防止无限循环
+    excludes=[], 
     noarchive=False,
     optimize=0,
 )
@@ -22,11 +22,11 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Video Downloader', # 直接使用最终名称
+    name='Video Downloader',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True, # 开启 strip 减小体积
-    upx=False,  # 如果没有安装 upx 就关闭
+    strip=False, 
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
