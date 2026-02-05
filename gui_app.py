@@ -43,6 +43,8 @@ class DownloadTask(ft.Container):
         if success:
             self.status_text.value = "任务已完成"
             self.status_text.color = ft.Colors.GREEN_400
+            self.progress_bar.value = 1.0
+            self.speed_text.value = "下载并处理完成 100%"
         else:
             # 优先显示具体错误信息
             error_msg = getattr(self.extractor, 'last_error', None)

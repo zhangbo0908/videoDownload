@@ -81,6 +81,7 @@ if [ -d "$APP_PATH" ]; then
     # 4. 重命名应用包 (Finder 显示的文件名)
     NEW_APP_PATH="dist/Video Downloader.app"
     echo "📦 重命名为 Video Downloader.app..."
+    rm -rf "$NEW_APP_PATH"
     mv "$APP_PATH" "$NEW_APP_PATH"
     APP_PATH="$NEW_APP_PATH"
 
