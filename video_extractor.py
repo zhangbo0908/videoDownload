@@ -240,15 +240,13 @@ class VideoExtractor:
             else:
                 self._log(f"警告: Cookies 文件不存在: {cookies_file}")
         
-        # YouTube 特定优化:使用浏览器 cookies 解决 403 问题
-        # 注意:macOS 下读取 Chrome cookies 需要访问钥匙串,首次会弹出授权提示(仅一次)
-        if 'youtube.com' in url or 'youtu.be' in url:
-            try:
-                ydl_opts['cookiesfrombrowser'] = ('chrome',)
-                self._log("状态: 使用 Chrome 浏览器 cookies")
-            except Exception as e:
-                self._log(f"警告: 无法读取浏览器 cookies: {e}")
-                self._log("提示: 请在 Chrome 中登录 YouTube 或使用 --cookies 参数")
+        # 通用优化: 尝试使用浏览器 cookies 解决反爬问题 (如抖音、B站高清)
+        # 注意: macOS 下读取 Chrome cookies 需要访问钥匙串,首次会弹出授权提示(仅一次)
+        try:
+            ydl_opts['cookiesfrombrowser'] = ('chrome',)
+            self._log("状态: 尝试加载 Chrome Cookies")
+        except Exception as e:
+            self._log(f"提示: 未加载浏览器 Cookies: {e}")
         
         try:
             downloaded_path = None

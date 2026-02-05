@@ -229,6 +229,8 @@ pyinstaller --onefile --name video-downloader-gui --windowed gui_app.py
 # 方法 1：终端授权
 chmod +x dist/video-downloader-gui
 xattr -d com.apple.quarantine dist/video-downloader-gui
+如果已经把应用拖到/Applications目录，则需要使用下面的命令：
+sudo xattr -rd com.apple.quarantine "/Applications/video-downloader-gui"
 
 # 方法 2：手动授权
 # 右键点击应用 → 打开 → 确认打开

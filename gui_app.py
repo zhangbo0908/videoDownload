@@ -19,7 +19,7 @@ class DownloadTask(ft.Container):
         self.border_radius = 10
         self.bgcolor = "#1E1E1E"
         self.border = ft.border.all(1, "#333333")
-        self.margin = ft.margin.only(bottom=10)
+        self.margin = ft.Margin.only(bottom=10)
         self.content = ft.Column([
             self.title_text,
             self.status_text,
