@@ -165,8 +165,13 @@ class VideoExtractor:
             return True
             
         except Exception as e:
-            self.last_error = f"下载失败: {str(e)}"
-            self._log(f"错误: {self.last_error}")
+            error_str = str(e)
+            if "Fresh cookies" in error_str:
+                 self.last_error = "Anti-Crawler: 请在 Chrome 中登录/刷新页面，或把 cookies.txt 放于同目录"
+                 self._log(f"错误: 抖音反爬拦截。请在 Chrome 浏览器打开抖音并登录，然后重试。")
+            else:
+                self.last_error = f"下载失败: {error_str}"
+                self._log(f"错误: {self.last_error}")
             return False
 
 
@@ -206,9 +211,7 @@ class VideoExtractor:
             self._log(f"提示: 当前版本暂不支持指定分辨率,将下载最佳画质")
 
         # 动态构建 Headers
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
+        headers = {}
         
         # 仅针对 Bilibili 添加 Referer（保持最简配置）
         if 'bilibili.com' in url or 'b23.tv' in url:
@@ -240,7 +243,7 @@ class VideoExtractor:
             else:
                 self._log(f"警告: Cookies 文件不存在: {cookies_file}")
         
-        # 通用优化: 尝试使用浏览器 cookies 解决反爬问题 (如抖音、B站高清)
+        # 尝试使用浏览器 cookies 解决反爬问题 (如抖音、B站高清)
         # 注意: macOS 下读取 Chrome cookies 需要访问钥匙串,首次会弹出授权提示(仅一次)
         try:
             ydl_opts['cookiesfrombrowser'] = ('chrome',)
