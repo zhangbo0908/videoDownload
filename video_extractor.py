@@ -213,6 +213,12 @@ class VideoExtractor:
         # 仅针对 Bilibili 添加 Referer（保持最简配置）
         if 'bilibili.com' in url or 'b23.tv' in url:
             headers['Referer'] = 'https://www.bilibili.com/'
+            
+        # 针对 Douyin 优化
+        if 'douyin.com' in url:
+            # 抖音通常需要移动端 UA 或特定的 Referer 才能更好工作
+            headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36'
+            headers['Referer'] = 'https://www.douyin.com/'
 
         ydl_opts = {
             'outtmpl': os.path.join(self.download_dir, '%(title)s.%(ext)s'), 

@@ -18,7 +18,7 @@ class DownloadTask(ft.Container):
         self.padding = 15
         self.border_radius = 10
         self.bgcolor = "#1E1E1E"
-        self.border = ft.border.all(1, "#333333")
+        self.border = ft.Border.all(1, "#333333")
         self.margin = ft.Margin.only(bottom=10)
         self.content = ft.Column([
             self.title_text,
@@ -190,7 +190,7 @@ def main(page: ft.Page):
                 ft.Row([
                     url_input,
                     ft.Container(
-                        content=ft.ElevatedButton(
+                        content=ft.Button(
                             "解析并下载",
                             icon=ft.Icons.BOLT_ROUNDED,
                             bgcolor="#00D2FF",
@@ -213,4 +213,4 @@ def main(page: ft.Page):
     )
 
 if __name__ == "__main__":
-    ft.app(main)
+    ft.app(target=main)
