@@ -5,7 +5,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>Video Downloader</string>
 	<key>CFBundleExecutable</key>
-	<string>video-downloader-gui</string>
+	<string>Video Downloader</string>
 	<key>CFBundleIconFile</key>
 	<string>app.icns</string>
 	<key>CFBundleIdentifier</key>

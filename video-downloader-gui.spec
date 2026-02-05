@@ -4,13 +4,13 @@
 a = Analysis(
     ['gui_app.py'],
     pathex=[],
-    binaries=[],
+    binaries=[('bin/ffmpeg', 'bin')],
     datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['tkinter', 'tcl', 'idlelib', 'unittest', 'pydoc', 'email', 'html', 'http', 'sqlite3', 'dist'], # 排除 dist 防止无限循环
     noarchive=False,
     optimize=0,
 )
@@ -22,11 +22,11 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='video-downloader-gui',
+    name='Video Downloader', # 直接使用最终名称
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
+    strip=True, # 开启 strip 减小体积
+    upx=False,  # 如果没有安装 upx 就关闭
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
@@ -38,7 +38,7 @@ exe = EXE(
 )
 app = BUNDLE(
     exe,
-    name='video-downloader-gui.app',
-    icon=None,
-    bundle_identifier=None,
+    name='Video Downloader.app', # 最终 .app 名称
+    icon='assets/app.icns',     # 打包时直接指定图标
+    bundle_identifier='com.zhangbo.videodownloader',
 )

@@ -22,7 +22,14 @@ class VideoExtractor:
         # 检查 FFmpeg 是否可用 (增强路径检测)
         import shutil
         
-        # 常见路径列表 (macOS/Linux)
+        # 1. 优先尝试 PyInstaller 打包后的内置路径
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            bundle_bin = os.path.join(sys._MEIPASS, "bin")
+            if os.path.exists(bundle_bin) and bundle_bin not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = bundle_bin + os.pathsep + os.environ.get("PATH", "")
+                # self._log(f"状态: 已加载内置 FFmpeg 路径")
+
+        # 2. 常见系统路径列表 (macOS/Linux)
         possible_paths = [
             "/usr/local/bin",
             "/opt/homebrew/bin",

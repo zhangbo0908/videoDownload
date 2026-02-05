@@ -7,3 +7,5 @@ build/
 # dist/
 downloads/
 .DS_Store
+dist/
+bin/
