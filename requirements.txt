@@ -1,9 +1,14 @@
+# --- 核心运行依赖 ---
+flet[all]>=0.80.5
+yt-dlp>=2025.2.3
+curl_cffi>=0.7.0
+pycryptodomex
+certifi
+
+# --- 打包与构建工具 ---
+pyinstaller>=6.18.0
+pyinstaller-hooks-contrib
 altgraph==0.17.5
 macholib==1.16.4
 packaging==26.0
-pyinstaller==6.18.0
-pyinstaller-hooks-contrib==2026.0
-setuptools==80.10.2
-yt-dlp
-flet[all]
-pycryptodomex
+setuptools>=80.0.0
